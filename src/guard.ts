@@ -1,3 +1,4 @@
+import { normalizeAgentIdStrict } from 'openclaw/plugin-sdk/routing';
 import { schedulingBlockReason } from './rules.ts';
 
 export const PLUGIN_ID = 'webhook-guard';
@@ -20,11 +21,23 @@ export interface BlockResult {
   blockReason: string;
 }
 
+/**
+ * The host's canonical form of an agent id, or undefined when it has none. The host lowercases agent ids
+ * (`normalizeAgentIdStrict`, plugin-sdk/routing, 2026.10.4), so `allowAgents` is compared in that form. The strict
+ * variant is used because the lenient one maps an unusable id to the default agent, which would exempt it.
+ */
+function canonicalAgentId(id: string): string | undefined {
+  const result = normalizeAgentIdStrict(id);
+  return result.ok ? result.value : undefined;
+}
+
 /** Every agent is checked unless its id is in `allowAgents`. Anything else in the config is ignored. */
 export function resolveConfig(raw: unknown): GuardConfig {
   const value = typeof raw === 'object' && raw !== null && 'allowAgents' in raw ? raw.allowAgents : undefined;
   return {
-    allowAgents: Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string' && id !== '') : [],
+    allowAgents: Array.isArray(value)
+      ? value.flatMap((id) => (typeof id === 'string' ? (canonicalAgentId(id) ?? []) : []))
+      : [],
   };
 }
 
@@ -33,7 +46,8 @@ export function resolveConfig(raw: unknown): GuardConfig {
  * as unproven, not as "some other agent" (plugins/hooks/tool-policy.md, 2026.10.4).
  */
 export function decide(event: ToolCallEvent, ctx: ToolCallContext | undefined, config: GuardConfig): BlockResult | undefined {
-  if (ctx?.agentId && config.allowAgents.includes(ctx.agentId)) {
+  const agentId = ctx?.agentId ? canonicalAgentId(ctx.agentId) : undefined;
+  if (agentId && config.allowAgents.includes(agentId)) {
     return undefined;
   }
   const reason = schedulingBlockReason(event.toolName, event.params);

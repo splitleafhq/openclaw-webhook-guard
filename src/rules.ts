@@ -26,11 +26,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * The host nests a dotted key such as `delivery.failureDestination.to` after trimming it, stripping one pair of
- * quotes and trimming each segment (`nestDottedCronKey` in the built cron tool, 2026.10.5).
+ * The field a key sets. OpenClaw 2026.10.5 nests a flat dotted key such as `'delivery.mode'` or `'job.delivery.mode'`
+ * into the job after trimming it and stripping one pair of surrounding quotes (`nestDottedCronKey` in the built cron
+ * tool), so such a key sets its last segment.
  */
-function isToKey(key: string): boolean {
-  return key.split('.').at(-1)?.trim().replaceAll(/^["']|["']$/g, '').trim() === 'to';
+function fieldName(key: string): string {
+  let k = key.trim();
+  if (k.length >= 2 && (k[0] === '"' || k[0] === "'") && k.endsWith(k[0])) {
+    k = k.slice(1, -1);
+  }
+  return k.slice(k.lastIndexOf('.') + 1).trim();
 }
 
 /**
@@ -46,16 +51,18 @@ function isUrl(value: string): boolean {
  * True when a value routes output to a URL. The routes are `delivery.mode`, `failureDestination.mode`,
  * `completionDestination` and `failureAlert.mode` set to "webhook", or a `to` that holds a URL. The whole tree is
  * scanned, so nested and flattened job fields are caught alike, and so are keys added under the same names later.
+ * "webhook" counts only as a `mode`, so a job id or name that says webhook is not a route.
  */
 export function hasWebhookRoute(value: unknown, key = ''): boolean {
   if (typeof value === 'string') {
-    return value.trim().toLowerCase() === 'webhook' || (isToKey(key) && isUrl(value));
+    const field = fieldName(key);
+    return (field === 'mode' && value.trim().toLowerCase() === 'webhook') || (field === 'to' && isUrl(value));
   }
   if (Array.isArray(value)) {
     return value.some((item) => hasWebhookRoute(item));
   }
   if (isRecord(value)) {
-    return Object.entries(value).some(([k, v]) => (/webhook/i.test(k) && v != null) || hasWebhookRoute(v, k));
+    return Object.entries(value).some(([k, v]) => (/webhook/i.test(k) && Boolean(v)) || hasWebhookRoute(v, k));
   }
   return false;
 }

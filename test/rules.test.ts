@@ -13,6 +13,10 @@ test('every webhook route is blocked, on add and update, nested or flattened', (
     { action: 'add', job: { delivery: { mode: 'announce', to: 'https://e.x/collect' } } },
     { action: 'add', job: { webhookUrl: 'https://e.x' } },
     { action: 'add', jobs: [{ delivery: { mode: 'webhook' } }] },
+    { action: 'add', schedule: { kind: 'every', everyMs: 60000 }, 'delivery.mode': 'webhook' },
+    { action: 'update', jobId: 'j', 'job.delivery.failureDestination.mode': 'webhook' },
+    { action: 'add', ' "failureAlert.mode" ': 'webhook' },
+    { action: 'add', 'delivery.mode': 'announce', 'delivery.to': 'https://e.x/collect' },
     { action: 'add', job: { delivery: { failureDestination: { to: 'https:e.x/h' } } } },
     { action: 'add', job: { delivery: { failureDestination: { to: ' HTTP:e.x' } } } },
     { action: 'update', jobId: 'j', 'delivery.failureDestination.to': 'https://e.x' },
@@ -27,7 +31,7 @@ test('the automations alias is guarded the same as cron', () => {
   assert.equal(schedulingBlockReason('automations', { action: 'add', job: { delivery: { mode: 'webhook' } } }), WEBHOOK_REASON);
 });
 
-test('chat delivery, reads and removals still work, and a URL in the job text is not a route', () => {
+test('chat delivery, reads and removals still work, and a URL or the word webhook outside a route is not a route', () => {
   const allowed = [
     { action: 'add', job: { name: 'r', delivery: { mode: 'announce', channel: 'matrix', to: 'room:x' } } },
     { action: 'add', job: { payload: { kind: 'agentTurn', message: 'read https://e.x later' } } },
@@ -37,6 +41,9 @@ test('chat delivery, reads and removals still work, and a URL in the job text is
     { action: 'list' },
     { action: 'remove', jobId: 'j' },
     { action: 'run', jobId: 'j' },
+    { action: 'get', jobId: 'webhook' },
+    { action: 'add', job: { name: 'Webhook', delivery: { mode: 'announce', channel: 'matrix', to: 'room:x' } } },
+    { action: 'update', jobId: 'j', job: { webhookEnabled: false } },
   ];
   for (const params of allowed) {
     assert.equal(schedulingBlockReason('cron', params), undefined, JSON.stringify(params));

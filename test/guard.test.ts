@@ -28,6 +28,12 @@ test('only a listed agent is exempt; a missing agent id never matches the list',
   assert.deepEqual(decide(webhook, {}, config), blocked);
 });
 
+test('allowAgents matches the canonical agent id the host passes, whatever case the config uses', () => {
+  const config = resolveConfig({ allowAgents: ['Ops'] });
+  assert.equal(decide(webhook, { agentId: 'ops' }, config), undefined);
+  assert.deepEqual(decide(webhook, { agentId: 'main' }, config), blocked);
+});
+
 test('calls that are not scheduling calls pass', () => {
   const config = resolveConfig({});
   assert.equal(decide({ toolName: 'read', params: { path: 'notes.md' } }, { agentId: 'main' }, config), undefined);
