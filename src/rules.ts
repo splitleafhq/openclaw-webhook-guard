@@ -21,6 +21,15 @@ export const SCHEDULING_ACTIONS: ReadonlySet<string> = new Set([
 export const WEBHOOK_REASON =
   'Scheduled jobs cannot post to a URL (webhook delivery). Deliver to the chat instead, or ask the owner.';
 
+export const HOST_COMMAND_REASON =
+  'Scheduled jobs cannot run host commands. Schedule an agent turn instead, or ask the owner to add it from the CLI.';
+
+/** Schedule and payload kinds that run outside an agent turn (`cron-tool` schema and write checks, OpenClaw 2026.10.8). */
+const HOST_KINDS: ReadonlySet<string> = new Set(['command', 'script', 'stream', 'onexit']);
+
+/** Fields that only exist on those jobs. Present at all, they mark the call. */
+const HOST_FIELDS: ReadonlySet<string> = new Set(['argv', 'command', 'script', 'trigger', 'onexit']);
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -67,6 +76,25 @@ export function hasWebhookRoute(value: unknown, key = ''): boolean {
   return false;
 }
 
+/**
+ * True when a call would create or change a job that runs a host command. OpenClaw refuses these on `add` and for most
+ * callers on `update`, but skips that check on `update` under an owner's management grant (`cron-tool`, 2026.10.8), so
+ * the check here applies to every turn. Only keys and `kind` values count, so a message that mentions a command passes.
+ */
+export function hasHostCommand(value: unknown, key = ''): boolean {
+  const field = fieldName(key).toLowerCase().replaceAll(/[-_]/g, '');
+  if (typeof value === 'string' && field === 'kind') {
+    return HOST_KINDS.has(value.trim().toLowerCase().replaceAll(/[-_]/g, ''));
+  }
+  if (HOST_FIELDS.has(field) && Boolean(value)) {
+    return true;
+  }
+  if (Array.isArray(value)) {
+    return value.some((item) => hasHostCommand(item));
+  }
+  return isRecord(value) && Object.entries(value).some(([k, v]) => hasHostCommand(v, k));
+}
+
 /** A reason to block this tool call, or undefined to let it through. Input it can't read is blocked. */
 export function schedulingBlockReason(toolName: string, params: unknown): string | undefined {
   if (!SCHEDULING_TOOLS.has(toolName)) {
@@ -77,6 +105,9 @@ export function schedulingBlockReason(toolName: string, params: unknown): string
   }
   if (typeof params.action !== 'string' || !SCHEDULING_ACTIONS.has(params.action)) {
     return `Blocked: unknown scheduling action "${String(params.action)}".`;
+  }
+  if (hasHostCommand(params)) {
+    return HOST_COMMAND_REASON;
   }
   return hasWebhookRoute(params) ? WEBHOOK_REASON : undefined;
 }

@@ -34,8 +34,9 @@ To turn it off, run `openclaw plugins disable webhook-guard`.
 
 ## Bounds
 
-- **Scoped:** only scheduling calls, and only their webhook routes. Every other tool call passes untouched.
+- **Scoped:** only scheduling calls, and only their webhook routes and host-command jobs (command, script, stream, on-exit, trigger), from every turn, the owner's included. Every other tool call passes untouched.
 - **Fails closed:** a scheduling call it can't read is blocked, and OpenClaw blocks the call if the handler throws or times out.
+- **Not run:** `run` on a command job the owner already made still works in an owner's turn; the hook sees only an id.
 - **Agents only:** jobs created from the CLI or the Control UI don't go through an agent's tools, so the hook never sees them.
 
 ## Develop
