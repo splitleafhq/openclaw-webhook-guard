@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { WEBHOOK_REASON, hasWebhookRoute, schedulingBlockReason } from '../src/rules.ts';
+import { HOST_COMMAND_REASON, WEBHOOK_REASON, hasWebhookRoute, schedulingBlockReason } from '../src/rules.ts';
 
 test('every webhook route is blocked, on add and update, nested or flattened', () => {
   const routes = [
@@ -72,4 +72,29 @@ test('a URL counts as a route only under a `to` key', () => {
   assert.equal(hasWebhookRoute({ note: 'https://e.x' }), false);
   assert.equal(hasWebhookRoute({ to: 'room:x' }), false);
   assert.equal(hasWebhookRoute(42), false);
+});
+
+test('a job that runs a host command is blocked, nested or flattened; an agent turn that mentions one is not', () => {
+  const blocked = [
+    { action: 'update', id: 'j', job: { payload: { kind: 'command', argv: ['sh'] } } },
+    { action: 'update', id: 'j', job: { payload: { argv: ['sh'] } } },
+    { action: 'update', id: 'j', kind: 'command', argv: ['sh'] },
+    { action: 'update', id: 'j', 'payload.kind': ' Command ' },
+    { action: 'add', job: { schedule: { kind: 'on-exit' } } },
+    { action: 'add', job: { schedule: { kind: 'stream', command: ['sh'] } } },
+    { action: 'add', job: { payload: { kind: 'script', source: 'x' } } },
+    { action: 'add', job: { trigger: { script: 'x' } } },
+  ];
+  for (const params of blocked) {
+    assert.equal(schedulingBlockReason('automations', params), HOST_COMMAND_REASON, JSON.stringify(params));
+  }
+  const allowed = {
+    action: 'add',
+    job: {
+      name: 'command review',
+      schedule: { kind: 'cron', expr: '0 7 * * 5' },
+      payload: { kind: 'agentTurn', message: 'run the kind: command check' },
+    },
+  };
+  assert.equal(schedulingBlockReason('automations', allowed), undefined);
 });
