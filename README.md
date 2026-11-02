@@ -47,6 +47,8 @@ npm ci --ignore-scripts
 npm run lint && npm run typecheck && npm test
 ```
 
+A pre-push gate runs these checks before each push: `lefthook install` turns it on (`lefthook.yml`).
+
 Run the checks in a separate clone, or delete `node_modules/` from a checkout you've installed with `--link`: OpenClaw maps `openclaw/plugin-sdk/*` to the gateway's own install, so a second copy can drift from the host.
 
 ## License
