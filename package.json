@@ -1,6 +1,6 @@
 {
-  "name": "@seriouslysean/openclaw-webhook-guard",
-  "version": "0.1.0",
+  "name": "@splitleafhq/openclaw-webhook-guard",
+  "version": "0.1.1",
   "private": true,
   "description": "An OpenClaw plugin that blocks agents' scheduled jobs from posting to a URL.",
   "keywords": [
@@ -10,11 +10,11 @@
     "cron",
     "webhook"
   ],
-  "homepage": "https://github.com/seriouslysean/openclaw-webhook-guard#readme",
-  "bugs": "https://github.com/seriouslysean/openclaw-webhook-guard/issues",
+  "homepage": "https://github.com/splitleafhq/openclaw-webhook-guard#readme",
+  "bugs": "https://github.com/splitleafhq/openclaw-webhook-guard/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/seriouslysean/openclaw-webhook-guard.git"
+    "url": "git+https://github.com/splitleafhq/openclaw-webhook-guard.git"
   },
   "type": "module",
   "license": "MIT",
@@ -22,6 +22,7 @@
     "node": ">=24.16"
   },
   "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
     "typecheck": "tsc -p tsconfig.json",
@@ -38,7 +39,10 @@
   },
   "openclaw": {
     "extensions": [
-      "./src/index.ts"
+      "./dist/index.js"
+    ],
+    "runtimeExtensions": [
+      "./dist/index.js"
     ],
     "compat": {
       "pluginApi": ">=2026.10.4",
