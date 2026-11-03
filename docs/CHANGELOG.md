@@ -2,6 +2,7 @@
 
 ## 0.1.1
 
+- Ships compiled `dist/` for git installs, which run npm without scripts.
 First version, built and tested against OpenClaw 2026.10.4.
 
 - Blocks scheduling calls (`cron`, `automations`) that create or change a job with a webhook route.
