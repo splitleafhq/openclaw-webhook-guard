@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1
 
 First version, built and tested against OpenClaw 2026.10.4.
 
