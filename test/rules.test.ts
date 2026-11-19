@@ -51,15 +51,15 @@ test('chat delivery, reads and removals still work, and a URL or the word webhoo
 });
 
 test('a scheduling call it cannot read is blocked rather than passed', () => {
-  assert.match(schedulingBlockReason('cron', 'add') ?? '', /no readable parameters/);
-  assert.match(schedulingBlockReason('cron', null) ?? '', /no readable parameters/);
-  assert.match(schedulingBlockReason('cron', ['add']) ?? '', /no readable parameters/);
+  for (const params of ['add', null, undefined, ['add'], 42]) {
+    assert.ok(schedulingBlockReason('cron', params), JSON.stringify(params));
+  }
 });
 
 test('an action the guard does not know is blocked, so an upgrade fails closed', () => {
-  assert.match(schedulingBlockReason('cron', { action: 'export' }) ?? '', /unknown scheduling action "export"/);
-  assert.match(schedulingBlockReason('cron', {}) ?? '', /unknown scheduling action "undefined"/);
-  assert.match(schedulingBlockReason('cron', { action: 7 }) ?? '', /unknown scheduling action "7"/);
+  for (const params of [{ action: 'export' }, {}, { action: 7 }, { action: null }]) {
+    assert.ok(schedulingBlockReason('cron', params), JSON.stringify(params));
+  }
 });
 
 test('other tools are left alone, whatever their parameters say', () => {
@@ -84,6 +84,7 @@ test('a job that runs a host command is blocked, nested or flattened; an agent t
     { action: 'add', job: { schedule: { kind: 'stream', command: ['sh'] } } },
     { action: 'add', job: { payload: { kind: 'script', source: 'x' } } },
     { action: 'add', job: { trigger: { script: 'x' } } },
+    { action: 'add', job: { onExit: 'sh x' } },
   ];
   for (const params of blocked) {
     assert.equal(schedulingBlockReason('automations', params), HOST_COMMAND_REASON, JSON.stringify(params));

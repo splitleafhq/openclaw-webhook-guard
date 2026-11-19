@@ -34,6 +34,12 @@ test('allowAgents matches the canonical agent id the host passes, whatever case 
   assert.deepEqual(decide(webhook, { agentId: 'main' }, config), blocked);
 });
 
+test('an agent id with no canonical form is checked, even when the list holds the default agent', () => {
+  const config = resolveConfig({ allowAgents: ['main'] });
+  assert.equal(decide(webhook, { agentId: 'main' }, config), undefined);
+  assert.deepEqual(decide(webhook, { agentId: '!!!' }, config), blocked);
+});
+
 test('calls that are not scheduling calls pass', () => {
   const config = resolveConfig({});
   assert.equal(decide({ toolName: 'read', params: { path: 'notes.md' } }, { agentId: 'main' }, config), undefined);
