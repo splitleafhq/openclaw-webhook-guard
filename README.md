@@ -4,7 +4,7 @@ An [OpenClaw](https://docs.openclaw.ai) plugin (id `webhook-guard`) that stops a
 
 OpenClaw's scheduler can deliver a job's result to a webhook, and `cron.webhookSsrfPolicy` only limits private and loopback targets. A public URL is always allowed. If an agent can schedule jobs, it can send whatever the job produces to any website. This plugin blocks that one route and leaves the rest of scheduling alone: reminders, recurring jobs and chat delivery all work.
 
-**Status:** experimental. Built and tested against OpenClaw 2026.10.4. Not published on ClawHub or npm; install it from source. What has and hasn't been checked on a live gateway is in [docs/verification.md](docs/verification.md).
+**Status:** experimental. Checked on a live gateway at OpenClaw 2026.10.4, its minimum version; CI typechecks against the newer `openclaw` devDependency. Not published on ClawHub or npm; install it from source. What has and hasn't been checked on a live gateway is in [docs/verification.md](docs/verification.md).
 
 ## What it blocks
 
